@@ -1,0 +1,3 @@
+--colors
+--compilers js:babel/register
+./server/**/*-spec.js
