@@ -1,19 +1,33 @@
 import React from 'react';
 
-class Hello extends React.Component {
+export default class InvoiceLineItems extends React.Component {
     constructor(props){
         super(props);
-        this.state={
+        this.state = {
+
         }
     }
     render() {
-            return (
-                <div>
-                    YOOO
-                </div>
-            )
-        }
-
+        return (
+            <div>
+                <InvoiceLineItemsView />
+            </div>
+        );
+    }
 }
 
-export default Hello;
+class InvoiceLineItemsView extends React.Component {
+    constructor(props){
+        super(props);
+        this.state = {
+
+        }
+    }
+    render() {
+        return (
+            <div>
+                Invoice line items component
+            </div>
+        );
+    }
+}
