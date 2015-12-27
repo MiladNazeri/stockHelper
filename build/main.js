@@ -77,7 +77,7 @@
 
 	var _reactRouter = __webpack_require__(198);
 
-	var history = (0, _historyLibCreateBrowserHistory2['default'])();
+	var history = (0, _historyLibCreateHashHistory2['default'])();
 
 	_reactDom2['default'].render(_react2['default'].createElement(
 	  _reactRouter.Router,
