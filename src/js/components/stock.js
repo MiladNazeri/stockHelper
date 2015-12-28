@@ -412,8 +412,6 @@ class StockView extends React.Component {
                                                                 return (<th key={index}>{item.percentage+"%"}</th>)
                                                                 })}
 
-                                                        }
-
                                                     </tr>
                                                 </thead>
                                                 <tbody>
