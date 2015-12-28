@@ -4,6 +4,7 @@
     @include grid;
     position: relative;
     margin: 0 auto;
+    padding: 5%;
     display: flex;
     flex-flow: column;
     & * {

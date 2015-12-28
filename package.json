@@ -105,6 +105,7 @@
     "react": "^0.14.3",
     "react-addons-update": "^0.14.3",
     "react-bootstrap": "^0.28.1",
+    "react-date-picker": "^3.1.9",
     "react-datepicker": "^0.17.0",
     "react-dom": "^0.14.3",
     "react-router": "^1.0.2",
