@@ -1,2 +1,41 @@
 @import '../stylesheets/common';
 
+.grid {
+    @include grid;
+    position: relative;
+    margin: 0 auto;
+    display: flex;
+    flex-flow: column;
+    & * {
+    }
+
+}
+
+.forumula {
+    @include col-1-1;
+
+}
+
+.table {
+    @include col-1-1;
+    & > table:first-of-type {
+    margin-right: auto;
+
+    }
+    & table:not(first-of-type) {
+    margin-right: auto;
+    width: 50%;
+    margin-bottom:auto;
+    align-self: flex-start;
+    }
+}
+
+.results {
+padding-top: 5%;
+margin-top: auto;
+align-self: flex-end;
+    @include col-1-1;
+
+}
+
+

@@ -14,6 +14,7 @@
   "scripts": {
     "postinstall": "gulp build:production",
     "start": "node server/main.js",
+    "dev": "webpack-dev-server --history-api-fallback --hot --inline --progress",
     "test": "./node_modules/karma/bin/karma start karma.conf.js"
   },
   "keywords": [
@@ -55,6 +56,7 @@
     "webpack-dev-server": "^1.12.0"
   },
   "dependencies": {
+    "autoprefixer": "^6.2.2",
     "autoprefixer-core": "5.2.1",
     "aws-sdk": "^2.2.23",
     "axios": "^0.8.1",
@@ -76,14 +78,17 @@
     "eslint-plugin-react": "^3.11.3",
     "express": "4.13.1",
     "express-session": "^1.10.3",
+    "extract-text-webpack-plugin": "^0.9.1",
     "flux": "2.0.3",
     "gulp": "3.9.0",
     "gulp-eslint": "^1.1.1",
     "gulp-preprocess": "1.2.0",
     "gulp-util": "3.0.6",
     "history": "~1.13.1",
+    "html-webpack-plugin": "^1.7.0",
     "jquery": "2.1.4",
     "lodash": "3.10.0",
+    "moment": "^2.10.6",
     "mongodb-uri": "0.9.7",
     "mongoose": "4.0.6",
     "morgan": "1.6.1",
@@ -97,7 +102,9 @@
     "passport-twitter": "^1.0.2",
     "postcss-loader": "0.5.1",
     "react": "^0.14.3",
+    "react-addons-update": "^0.14.3",
     "react-bootstrap": "^0.28.1",
+    "react-datepicker": "^0.17.0",
     "react-dom": "^0.14.3",
     "react-router": "^1.0.2",
     "react-transform": "0.0.3",

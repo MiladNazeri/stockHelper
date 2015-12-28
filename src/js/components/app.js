@@ -12,26 +12,6 @@ class App extends React.Component {
     render(){
         return(
             <div>
-                <div id="inputSymbol">
-                        <p>Enter Stock</p>
-                        <input id="startDate" class="datePick required" type="text"  Placeholder="From" />
-                        <input id="endDate" class="datePick" type="text" Placeholder="To"  />
-
-                        <input id="txtSymbol" class="required" Placeholder="Symbol" />
-
-                        <button ID="submit">Submit</button>
-                    </div>
-                <div class="realtime">
-                    <div><p>Name</p><span id="symbol"></span></div>
-                    <div><p>RealtimeBid</p><span id="bidRealtime"></span></div>
-                </div>
-                <div class="historical">
-                    <div><p>Date</p><span id="date"></span></div>
-                    <div><p>Price Close</p><span id="closeValue"></span></div>
-                    <div><p>Price High</p><span id="highValue"></span></div>
-                    <div><p>Price Low</p><span id="lowValue"></span></div>
-                    <div><p>Volume</p><span id="volume"></span></div>
-                </div>
             {this.props.children}
             </div>
         )
@@ -49,3 +29,28 @@ export default App;
 //analaysis based on formula
 //
 //
+//
+//
+//
+
+
+// <div id="inputSymbol">
+//         <p>Enter Stock</p>
+//         <input id="startDate" class="datePick required" type="text"  Placeholder="From" />
+//         <input id="endDate" class="datePick" type="text" Placeholder="To"  />
+
+//         <input id="txtSymbol" class="required" Placeholder="Symbol" />
+
+//         <button ID="submit">Submit</button>
+//     </div>
+// <div class="realtime">
+//     <div><p>Name</p><span id="symbol"></span></div>
+//     <div><p>RealtimeBid</p><span id="bidRealtime"></span></div>
+// </div>
+// <div class="historical">
+//     <div><p>Date</p><span id="date"></span></div>
+//     <div><p>Price Close</p><span id="closeValue"></span></div>
+//     <div><p>Price High</p><span id="highValue"></span></div>
+//     <div><p>Price Low</p><span id="lowValue"></span></div>
+//     <div><p>Volume</p><span id="volume"></span></div>
+// </div>
