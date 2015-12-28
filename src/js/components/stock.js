@@ -340,14 +340,14 @@ class StockView extends React.Component {
                                                 key="1"
                                                 selected={this.state.dateStart}
                                                 onChange={this.dateStartChange}
-                                                dateFormat="YYMMDD" />
+                                                dateFormat="YYYYMMDD" />
                                     </td>
                                     <td>
                                         <DatePicker
                                                 key="2"
                                                 selected={this.state.dateEnd}
                                                 onChange={this.dateEndChange}
-                                                dateFormat="YYMMDD" />
+                                                dateFormat="YYYYMMDD" />
                                     </td>
                                 </tr>
                             </tbody>
