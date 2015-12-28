@@ -100,6 +100,7 @@
     "passport-google-oauth": "^0.1.5",
     "passport-local": "^1.0.0",
     "passport-twitter": "^1.0.2",
+    "phantomjs": "^1.9.19",
     "postcss-loader": "0.5.1",
     "react": "^0.14.3",
     "react-addons-update": "^0.14.3",
