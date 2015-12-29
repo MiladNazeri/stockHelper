@@ -27,7 +27,7 @@ class Stock extends React.Component {
         return (parseInt(this.props.index) + 1);
     }
     render() {
-        let { index, title,titleChange,
+        let { index, title,titleChange, buyPrice, buyPriceChange,
               deleteLineItem } = this.props;
 
         return(
@@ -36,6 +36,11 @@ class Stock extends React.Component {
                 <td>
                     <input name="title" value={title}
                         onChange={titleChange.bind(null, index)}
+                        className="form-control"/>
+                </td>
+                <td>
+                    <input type="number" name="title" value={buyPrice}
+                        onChange={buyPriceChange.bind(null, index)}
                         className="form-control"/>
                 </td>
                 <td>
@@ -85,10 +90,13 @@ class StockView extends React.Component {
             super(props);
             this.state = {
                 line_items: [
-                    { title: null }
+                    { title: null, buyPrice: null }
                 ],
                 formula_items: [
-                    { percentage: null, days: null }
+                    { percentage: 6, days: 2, },
+                    { percentage: 4, days: 4, },
+                    { percentage: 2, days: 6, },
+                    { percentage: -10, days: 10, }
                 ],
                 dateStart: null,
                 dateStartFormat: null,
@@ -100,6 +108,7 @@ class StockView extends React.Component {
             console.log("moment:", moment())
             console.log("Line_items", this.state.line_items)
             this.titleChange = this.titleChange.bind(this);
+            this.buyPriceChange = this.buyPriceChange.bind(this);
             this.daysChange = this.daysChange.bind(this);
             this.percentageChange = this.percentageChange.bind(this);
             this.addLineItem = this.addLineItem.bind(this);
@@ -113,6 +122,7 @@ class StockView extends React.Component {
             this.tableFooter2 = this.tableFooter2.bind(this);
             this.tableHeader2 = this.tableHeader2.bind(this);
             this.submitQuery = this.submitQuery.bind(this);
+            this.valueChecker = this.valueChecker.bind(this);
 
         }
         titleChange(index, event) {
@@ -122,6 +132,11 @@ class StockView extends React.Component {
             let newArray = this.state.line_items.slice();
             console.log("newArray:", newArray)
             newArray[index].title = event.target.value;
+            this.setState({ line_items: newArray });
+        }
+        buyPriceChange(index, event) {
+            let newArray = this.state.line_items.slice();
+            newArray[index].buyPrice = event.target.value;
             this.setState({ line_items: newArray });
         }
         daysChange(index, event) {
@@ -213,7 +228,8 @@ class StockView extends React.Component {
                 <thead>
                     <tr>
                         <th width="2%">Nr</th>
-                        <th width="78%">Stock Symbol</th>
+                        <th width="39%">Stock Symbol</th>
+                        <th width="39%">Buy Price</th>
                         <th width="20%">Action</th>
                     </tr>
                 </thead>
@@ -295,17 +311,44 @@ class StockView extends React.Component {
                 </tfoot>
             );
         }
+        valueChecker(buyPrice, lowPrice, highPrice, percentage){
+            let multiplyPercentage = (100 + percentage) * .01;
+            let buyPriceAfterPercentage = buyPrice * multiplyPercentage;
+            if (multiplyPercentage > 1) {
+                if (lowPrice < buyPriceAfterPercentage && buyPriceAfterPercentage > highPrice ){
+                    return ["Held", buyPriceAfterPercentage.toFixed(2), (buyPriceAfterPercentage-buyPrice).toFixed(2)].join("-")
+                }
+                if (lowPrice < buyPriceAfterPercentage && buyPriceAfterPercentage <= highPrice ){
+                    return ["Sold", buyPriceAfterPercentage.toFixed(2), (buyPriceAfterPercentage-buyPrice).toFixed(2)].join("-")
+                }
+                if (lowPrice >= buyPriceAfterPercentage){
+                    return ["Sold", buyPriceAfterPercentage.toFixed(2), (buyPriceAfterPercentage-buyPrice).toFixed(2)].join("-")
+                }
 
+            }
+            if (multiplyPercentage < 1) {
+                if (lowPrice > buyPriceAfterPercentage){
+                    return ["Sold", buyPriceAfterPercentage.toFixed(2), (buyPriceAfterPercentage-buyPrice).toFixed(2)].join("-")
+                }
+                if (lowPrice < buyPriceAfterPercentage){
+                    return ["Held", buyPriceAfterPercentage.toFixed(2), (buyPriceAfterPercentage-buyPrice).toFixed(2)].join("-")
+                }
+            }
+        }
         render() {
+            var buyPrice = this.state.line_items[0].buyPrice;
             let line_items = [];
+            var cellStyle = null;
             for(var index in this.state.line_items) {
                 line_items.push(
                     <Stock
                             key={index}
                             index={index}
                             title={this.state.line_items[index].title}
+                            buyPrice={this.state.line_items[index].buyPrice}
                             titleChange={this.titleChange}
-                            deleteLineItem={this.deleteLineItem} />
+                            deleteLineItem={this.deleteLineItem}
+                            buyPriceChange={this.buyPriceChange} />
                 )
             }
             let formula_items = [];
@@ -400,6 +443,7 @@ class StockView extends React.Component {
                                             <table className="table table-bordered">
                                                 <thead>
                                                     <tr>
+                                                        <th>Day:</th>
                                                         <th>Date:</th>
                                                         <th>Open:</th>
                                                         <th>Close:</th>
@@ -418,16 +462,19 @@ class StockView extends React.Component {
                                                     {this.state.apiHistoricalResponse.data.query.results.quote.reverse().map( (date, index) => {
                                                         return(
                                                             <tr key={index}>
+                                                                <td><p>{index+1}</p></td>
                                                                 <td><p>{date.Date}</p></td>
                                                                 <td><p>{date.Open}</p></td>
                                                                 <td><p>{date.Close}</p></td>
                                                                 <td><p>{date.High}</p></td>
                                                                 <td><p>{date.Low}</p></td>
                                                                 <td><p>{date.Volume}</p></td>
-                                                                {(this.state.formula_items && this.state.apiHistoricalResponse) ?
+                                                                {this.state.formula_items &&
                                                                     this.state.formula_items.map( (item, index) => {
-                                                                    <td key={index}><p>{item.percentage+"%"}</p></td>
-                                                                    }) : null
+                                                                    {cellStyle = this.valueChecker(buyPrice, date.Low, date.High, item.percentage).split("-")[0].toString()}
+                                                                    return (<td key={index} className={cellStyle}>
+                                                                        <p>{this.valueChecker(buyPrice, date.Low, date.High, item.percentage)}</p></td>)
+                                                                    })
                                                                 }
                                                             </tr>
                                                             )
