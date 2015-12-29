@@ -260,7 +260,7 @@ class StockView extends React.Component {
             return(
                 <tfoot>
                     <tr>
-                      <td colSpan="1"></td>
+                      <td colSpan="2"></td>
                       <th>{this.state.dateStartFormat}-{this.state.dateEndFormat}-{titles.join(",")}</th>
                       <td>
                         <button className="btn btn-success"
@@ -270,7 +270,7 @@ class StockView extends React.Component {
                       </td>
                     </tr>
                     <tr>
-                        <td colSpan="2"></td>
+                        <td colSpan="3"></td>
                         <td>
                             <button className="btn btn-primary"
                                     onClick={this.submitQuery} >
