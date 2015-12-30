@@ -112,6 +112,7 @@ class StockView extends React.Component {
                 dateEndFormat: null,
                 updated: false
             }
+            console.log("apiRealTimeResponse", this.state.line_items[0].apiRealTimeResponse)
             this.titleChange = this.titleChange.bind(this);
             this.updated = this.updated.bind(this);
             this.buyPriceChange = this.buyPriceChange.bind(this);
@@ -200,6 +201,22 @@ class StockView extends React.Component {
             return this.state.updated;
         }
         submitQuery(e){
+
+            // var accum = [];
+            // for (var x = 0; x < line_items.length; x++ ){
+            //      Promise.all([ api.realtimeQ(line_items[x].title),
+            //     api.historicalQ(line_items[x].title, startDate, endDate) ])
+            //     .then( (results) => {
+            //         accum.push( [ results[0], results[1] ] )
+            //     }).then( () => {
+            //             newArray[x].apiRealTimeResponse = accum[x][0]
+            //             newArray[x].apiHistoricalResponse = accum[x][1]
+            //     })
+            // }
+            // this.setState({
+            //     line_items: newArray,
+            //     updated: true
+            //  })
             e.preventDefault();
             this.setState({
                 updated: false
@@ -209,20 +226,31 @@ class StockView extends React.Component {
             let startDate = this.state.dateStartFormat;
             let endDate = this.state.dateEndFormat;
             var accum = [];
-            for (var x = 0; x < line_items.length; x++ ){
-                 Promise.all([ api.realtimeQ(line_items[x].title),
-                api.historicalQ(line_items[x].title, startDate, endDate) ])
-                .then( (results) => {
-                    accum.push( [ results[0], results[1] ] )
-                }).then( () => {
-                        newArray[x].apiRealTimeResponse = accum[x][0]
-                        newArray[x].apiHistoricalResponse = accum[x][1]
-                })
-            }
-            this.setState({
-                line_items: newArray,
-                updated: true
-             })
+            var promises = [];
+
+            for (let x = 0; x < line_items.length; x++) {
+                promises.push(
+                    Promise.all([
+                         api.realtimeQ(line_items[x].title),
+                         api.historicalQ(line_items[x].title, startDate, endDate)
+                    ])
+                    .then(results => {
+                        accum.push([results[0], results[1]]);
+                    })
+                    .then(() => {
+                        newArray[x].apiRealTimeResponse = accum[x][0];
+                        newArray[x].apiHistoricalResponse = accum[x][1];
+                  })
+                );
+              }
+
+              Promise.all(promises)
+                .then(() => {
+                    this.setState({
+                      line_items: newArray,
+                      updated: true
+                    });
+                  });
         }
         tableHeader() {
             return(
@@ -314,29 +342,29 @@ class StockView extends React.Component {
             let buyPriceAfterPercentage = buyPrice * multiplyPercentage;
             if (multiplyPercentage > 1) {
                 if (lowPrice < buyPriceAfterPercentage && buyPriceAfterPercentage > highPrice ){
-                    return ["Held", $+buyPriceAfterPercentage.toFixed(2), $+(buyPriceAfterPercentage-buyPrice).toFixed(2)].join("-")
+                    return ["Held", "$"+buyPriceAfterPercentage.toFixed(2), "$"+(buyPriceAfterPercentage-buyPrice).toFixed(2)].join("-")
                 }
                 if (lowPrice < buyPriceAfterPercentage && buyPriceAfterPercentage <= highPrice ){
-                    return ["Sold", $+buyPriceAfterPercentage.toFixed(2), $+(buyPriceAfterPercentage-buyPrice).toFixed(2)].join("-")
+                    return ["Sold", "$"+buyPriceAfterPercentage.toFixed(2), "$"+(buyPriceAfterPercentage-buyPrice).toFixed(2)].join("-")
                 }
                 if (lowPrice >= buyPriceAfterPercentage){
-                    return ["Sold", $+buyPriceAfterPercentage.toFixed(2), $+(buyPriceAfterPercentage-buyPrice).toFixed(2)].join("-")
+                    return ["Sold", "$"+buyPriceAfterPercentage.toFixed(2), "$"+(buyPriceAfterPercentage-buyPrice).toFixed(2)].join("-")
                 }
 
             }
             if (multiplyPercentage < 1) {
                 if (lowPrice < buyPriceAfterPercentage){
-                    return ["Sold", $+buyPriceAfterPercentage.toFixed(2), $+(buyPriceAfterPercentage-buyPrice).toFixed(2)].join("-")
+                    return ["Sold", "$"+buyPriceAfterPercentage.toFixed(2), "$"+(buyPriceAfterPercentage-buyPrice).toFixed(2)].join("-")
                 }
                 if (lowPrice > buyPriceAfterPercentage){
-                    return ["Held", $+buyPriceAfterPercentage.toFixed(2), $+(buyPriceAfterPercentage-buyPrice).toFixed(2)].join("-")
+                    return ["Held", "$"+buyPriceAfterPercentage.toFixed(2), "$"+(buyPriceAfterPercentage-buyPrice).toFixed(2)].join("-")
                 }
             }
         }
         render() {
             console.log("this.state.line.items", this.state.line_items)
             let line_items = [];
-            var cellStyle = null;
+
             for(var index in this.state.line_items) {
                 line_items.push(
                     <Stock
@@ -364,8 +392,9 @@ class StockView extends React.Component {
                             deleteLineItem2={this.deleteLineItem2} />
                 )
             }
-            if (this.updated()){
-            let result_items = [];
+
+            var result_items = [];
+            if ( this.updated() ) {
             for(var index in this.state.line_items) {
                 result_items.push(
                 <ResultsView
@@ -427,9 +456,7 @@ class StockView extends React.Component {
                             </table>
 
                             <div className="results">
-                            {this.updated() &&
                                 {result_items}
-                            }
                             </div>
                         </div>
                 </div>
@@ -440,6 +467,8 @@ class StockView extends React.Component {
 class ResultsView extends React.Component {
     render(){
         var { formula_items,apiHistoricalResponse, valueChecker, shares, buyPrice, name, bidRealtime } = this.props
+        var cellStyle = null;
+        var perShare = null;
         if(apiHistoricalResponse){
             var reverseArray = apiHistoricalResponse;
             reverseArray.reverse();
@@ -476,7 +505,8 @@ class ResultsView extends React.Component {
                             <th>Volume:</th>
                             {formula_items &&
                                 formula_items.map( (item, index) => {
-                                return (<th key={index}>{item.percentage+"%"}</th>)
+                                return (<div><th key={index}>{item.percentage+"%"}</th>
+                                        <th key={"b"+index}>Total Made</th></div>)
                                 }
                                 )}
                         </tr>
@@ -500,8 +530,8 @@ class ResultsView extends React.Component {
                                             <div>
                                                 <td key={index} className={cellStyle}>
                                                 <p>{valueChecker(buyPrice, date.Low, date.High, item.percentage)}</p></td>
-                                                    <td key={a+index} className={cellStyle}>
-                                                <p>{perShare * shares}</p></td>
+                                                    <td key={"a"+index} className={cellStyle}>
+                                                <p>{ (parseFloat(perShare.substr(1,perShare.length)) * parseFloat(shares)).toFixed(2) }</p></td>
                                             </div>
 
                                             )
