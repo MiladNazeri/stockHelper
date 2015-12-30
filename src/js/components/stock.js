@@ -5,6 +5,7 @@ import moment from 'moment';
 import 'react-datepicker/dist/react-datepicker.css'
 import api from '../utils/api.js'
 import './app.scss';
+import Promise from 'bluebird';
 
 export default class StockContainer extends React.Component {
     constructor(props){
@@ -27,7 +28,8 @@ class Stock extends React.Component {
         return (parseInt(this.props.index) + 1);
     }
     render() {
-        let { index, title,titleChange, buyPrice, buyPriceChange,
+
+        let { index,title,titleChange,buyPrice,buyPriceChange, shares, sharesChange,
               deleteLineItem } = this.props;
 
         return(
@@ -39,9 +41,14 @@ class Stock extends React.Component {
                         className="form-control"/>
                 </td>
                 <td>
-                    <input type="number" name="title" value={buyPrice}
+                    <input type="number" name="buyPrice" value={buyPrice}
                         onChange={buyPriceChange.bind(null, index)}
                         className="form-control"/>
+                </td>
+                <td>
+                    <input type="number" name="shares" value={shares}
+                        onChange={sharesChange.bind(null, index)}
+                        className="form-control" />
                 </td>
                 <td>
                     <button className="btn btn-danger"
@@ -53,6 +60,7 @@ class Stock extends React.Component {
         );
     }
 }
+
 class Stock2 extends React.Component {
     number() {
         return (parseInt(this.props.index) + 1);
@@ -90,7 +98,7 @@ class StockView extends React.Component {
             super(props);
             this.state = {
                 line_items: [
-                    { title: null, buyPrice: null }
+                    { title: null, buyPrice: null, shares: null, apiHistoricalResponse: null, apiRealTimeResponse: null }
                 ],
                 formula_items: [
                     { percentage: 6, days: 2, },
@@ -102,13 +110,12 @@ class StockView extends React.Component {
                 dateStartFormat: null,
                 dateEnd: null,
                 dateEndFormat: null,
-                apiRealTimeResponse: null,
-                apiHistoricalResponse: null
+                updated: false
             }
-            console.log("moment:", moment())
-            console.log("Line_items", this.state.line_items)
             this.titleChange = this.titleChange.bind(this);
+            this.updated = this.updated.bind(this);
             this.buyPriceChange = this.buyPriceChange.bind(this);
+            this.sharesChange = this.sharesChange.bind(this);
             this.daysChange = this.daysChange.bind(this);
             this.percentageChange = this.percentageChange.bind(this);
             this.addLineItem = this.addLineItem.bind(this);
@@ -126,11 +133,7 @@ class StockView extends React.Component {
 
         }
         titleChange(index, event) {
-            console.log("title change index:", index)
-            console.log("title change event:", event)
-            console.log("state.line_items:", this.state.line_items)
             let newArray = this.state.line_items.slice();
-            console.log("newArray:", newArray)
             newArray[index].title = event.target.value;
             this.setState({ line_items: newArray });
         }
@@ -141,15 +144,18 @@ class StockView extends React.Component {
         }
         daysChange(index, event) {
             let newArray = this.state.formula_items.slice();
-            console.log("newArray:", newArray)
             newArray[index].days = event.target.value;
             this.setState({ formula_items: newArray });
         }
         percentageChange(index, event) {
             let newArray = this.state.formula_items.slice();
-            console.log("newArray:", newArray)
             newArray[index].percentage = event.target.value;
             this.setState({ formula_items: newArray });
+        }
+        sharesChange(index, event) {
+            let newArray = this.state.line_items.slice();
+            newArray[index].shares = event.target.value;
+            this.setState({ line_items: newArray });
         }
         addLineItem(event) {
             this.setState({ line_items: update(this.state.line_items, {$push: [{title: null}] })  });
@@ -158,21 +164,12 @@ class StockView extends React.Component {
             this.setState({ formula_items: update(this.state.formula_items, {$push: [{ percentage: null, days: null }] })  });
         }
         deleteLineItem(index, event) {
-        console.log("delete index:", index)
-
             this.setState({ line_items: update(this.state.line_items, {$splice: [[index, 1]] } ) });
         }
         deleteLineItem2(index, event) {
-        console.log("delete index:", index)
-
             this.setState({ formula_items: update(this.state.formula_items, {$splice: [[index, 1]] } ) });
         }
-        // dateStartChange(e){
-        //     console.log("date start", e)
-        //     this.setState({
-        //         dateStart: e
-        //     })
-        // }
+
         dateStartChange(e){
             let date = new Date(e._d)
             let year = date.getFullYear().toString()
@@ -199,29 +196,33 @@ class StockView extends React.Component {
                 dateEndFormat: newDate
             })
         }
+        updated(){
+            return this.state.updated;
+        }
         submitQuery(e){
-            let title = this.state.line_items[0].title;
+            e.preventDefault();
+            this.setState({
+                updated: false
+             })
+            let { line_items } = this.state
+            let newArray = this.state.line_items.slice()
             let startDate = this.state.dateStartFormat;
             let endDate = this.state.dateEndFormat;
-            e.preventDefault();
-            api.realtimeQ(title)
-            .then((response) => {
-                console.log("response", response)
-                this.setState({
-                    apiRealTimeResponse: response
-                });
-            })
-            .then( () => {
-                api.historicalQ(title, startDate, endDate)
-                .then( (response) => {
-                    console.log("Historical response", response)
-
-                    this.setState({
-                        apiHistoricalResponse: response
-                    });
+            var accum = [];
+            for (var x = 0; x < line_items.length; x++ ){
+                 Promise.all([ api.realtimeQ(line_items[x].title),
+                api.historicalQ(line_items[x].title, startDate, endDate) ])
+                .then( (results) => {
+                    accum.push( [ results[0], results[1] ] )
+                }).then( () => {
+                        newArray[x].apiRealTimeResponse = accum[x][0]
+                        newArray[x].apiHistoricalResponse = accum[x][1]
                 })
-            })
-
+            }
+            this.setState({
+                line_items: newArray,
+                updated: true
+             })
         }
         tableHeader() {
             return(
@@ -229,7 +230,8 @@ class StockView extends React.Component {
                     <tr>
                         <th width="2%">Nr</th>
                         <th width="39%">Stock Symbol</th>
-                        <th width="39%">Buy Price</th>
+                        <th width="20%">Buy Price</th>
+                        <th width="19%">Shares</th>
                         <th width="20%">Action</th>
                     </tr>
                 </thead>
@@ -260,8 +262,8 @@ class StockView extends React.Component {
             return(
                 <tfoot>
                     <tr>
-                      <td colSpan="2"></td>
-                      <th>{this.state.dateStartFormat}-{this.state.dateEndFormat}-{titles.join(",")}</th>
+                      <td colSpan="3"></td>
+                      <th></th>
                       <td>
                         <button className="btn btn-success"
                                 onClick={this.addLineItem} >
@@ -270,7 +272,7 @@ class StockView extends React.Component {
                       </td>
                     </tr>
                     <tr>
-                        <td colSpan="3"></td>
+                        <td colSpan="4"></td>
                         <td>
                             <button className="btn btn-primary"
                                     onClick={this.submitQuery} >
@@ -301,10 +303,6 @@ class StockView extends React.Component {
                     <tr>
                         <td colSpan="3"></td>
                         <td>
-                            <button className="btn btn-primary"
-                                    onClick={this.submitQuery2} >
-                            Submit
-                            </button>
                         </td>
                     </tr>
 
@@ -316,27 +314,27 @@ class StockView extends React.Component {
             let buyPriceAfterPercentage = buyPrice * multiplyPercentage;
             if (multiplyPercentage > 1) {
                 if (lowPrice < buyPriceAfterPercentage && buyPriceAfterPercentage > highPrice ){
-                    return ["Held", buyPriceAfterPercentage.toFixed(2), (buyPriceAfterPercentage-buyPrice).toFixed(2)].join("-")
+                    return ["Held", $+buyPriceAfterPercentage.toFixed(2), $+(buyPriceAfterPercentage-buyPrice).toFixed(2)].join("-")
                 }
                 if (lowPrice < buyPriceAfterPercentage && buyPriceAfterPercentage <= highPrice ){
-                    return ["Sold", buyPriceAfterPercentage.toFixed(2), (buyPriceAfterPercentage-buyPrice).toFixed(2)].join("-")
+                    return ["Sold", $+buyPriceAfterPercentage.toFixed(2), $+(buyPriceAfterPercentage-buyPrice).toFixed(2)].join("-")
                 }
                 if (lowPrice >= buyPriceAfterPercentage){
-                    return ["Sold", buyPriceAfterPercentage.toFixed(2), (buyPriceAfterPercentage-buyPrice).toFixed(2)].join("-")
+                    return ["Sold", $+buyPriceAfterPercentage.toFixed(2), $+(buyPriceAfterPercentage-buyPrice).toFixed(2)].join("-")
                 }
 
             }
             if (multiplyPercentage < 1) {
-                if (lowPrice > buyPriceAfterPercentage){
-                    return ["Sold", buyPriceAfterPercentage.toFixed(2), (buyPriceAfterPercentage-buyPrice).toFixed(2)].join("-")
-                }
                 if (lowPrice < buyPriceAfterPercentage){
-                    return ["Held", buyPriceAfterPercentage.toFixed(2), (buyPriceAfterPercentage-buyPrice).toFixed(2)].join("-")
+                    return ["Sold", $+buyPriceAfterPercentage.toFixed(2), $+(buyPriceAfterPercentage-buyPrice).toFixed(2)].join("-")
+                }
+                if (lowPrice > buyPriceAfterPercentage){
+                    return ["Held", $+buyPriceAfterPercentage.toFixed(2), $+(buyPriceAfterPercentage-buyPrice).toFixed(2)].join("-")
                 }
             }
         }
         render() {
-            var buyPrice = this.state.line_items[0].buyPrice;
+            console.log("this.state.line.items", this.state.line_items)
             let line_items = [];
             var cellStyle = null;
             for(var index in this.state.line_items) {
@@ -345,8 +343,10 @@ class StockView extends React.Component {
                             key={index}
                             index={index}
                             title={this.state.line_items[index].title}
+                            shares={this.state.line_items[index].shares}
                             buyPrice={this.state.line_items[index].buyPrice}
                             titleChange={this.titleChange}
+                            sharesChange={this.sharesChange}
                             deleteLineItem={this.deleteLineItem}
                             buyPriceChange={this.buyPriceChange} />
                 )
@@ -364,130 +364,72 @@ class StockView extends React.Component {
                             deleteLineItem2={this.deleteLineItem2} />
                 )
             }
-            return(
-                <div className="grid">
-                    <div className="formula">
-                    </div>
-                    <div className="table">
-                        <table className="table table-bordered" style={{width:"25%"}}>
-                            <thead>
-                                <tr>
-                                    <th width="50%">Date start</th>
-                                    <th width="50%">Date End</th>
-                                </tr>
-                            </thead>
-                            <tbody>
-                                <tr>
-                                    <td>
-                                        <DatePicker
-                                                key="1"
-                                                selected={this.state.dateStart}
-                                                onChange={this.dateStartChange}
-                                                dateFormat="YYYYMMDD" />
-                                    </td>
-                                    <td>
-                                        <DatePicker
-                                                key="2"
-                                                selected={this.state.dateEnd}
-                                                onChange={this.dateEndChange}
-                                                dateFormat="YYYYMMDD" />
-                                    </td>
-                                </tr>
-                            </tbody>
-                        </table>
+            if (this.updated()){
+            let result_items = [];
+            for(var index in this.state.line_items) {
+                result_items.push(
+                <ResultsView
+                    key={index}
+                    formula_items={this.state.formula_items}
+                    apiHistoricalResponse={this.state.line_items[index].apiHistoricalResponse.data.query.results.quote}
+                    valueChecker={this.valueChecker}
+                    shares={this.state.line_items[index].shares}
+                    buyPrice={this.state.line_items[index].buyPrice}
+                    name={this.state.line_items[index].apiRealTimeResponse.data.query.results.quote.Name}
+                    bidRealtime={this.state.line_items[index].apiRealTimeResponse.data.query.results.quote.BidRealtime} />
+                    )
+                }
+            }
 
-                        <table className="table table-bordered" style={{width:"75%"}}>
-                            {this.tableHeader()}
-                            <tbody>
-                                {line_items}
-                            </tbody>
-                                {this.tableFooter()}
-                        </table>
+            return( <div className="grid">
+                        <div className="table">
+                            <table className="table table-bordered" style={{width:"25%"}}>
+                                <thead>
+                                    <tr>
+                                        <th width="50%">Date start</th>
+                                        <th width="50%">Date End</th>
+                                    </tr>
+                                </thead>
+                                <tbody>
+                                    <tr>
+                                        <td>
+                                            <DatePicker
+                                                    key="1"
+                                                    selected={this.state.dateStart}
+                                                    onChange={this.dateStartChange}
+                                                    dateFormat="YYYYMMDD" />
+                                        </td>
+                                        <td>
+                                            <DatePicker
+                                                    key="2"
+                                                    selected={this.state.dateEnd}
+                                                    onChange={this.dateEndChange}
+                                                    dateFormat="YYYYMMDD" />
+                                        </td>
+                                    </tr>
+                                </tbody>
+                            </table>
 
-                        <table className="table table-bordered" style={{width:"75%"}}>
-                            {this.tableHeader2()}
-                            <tbody>
-                                {formula_items}
-                            </tbody>
-                                {this.tableFooter2()}
-                        </table>
+                            <table className="table table-bordered" style={{width:"75%"}}>
+                                {this.tableHeader()}
+                                <tbody>
+                                    {line_items}
+                                </tbody>
+                                    {this.tableFooter()}
+                            </table>
 
-                    </div>
-                        <div className="results">
-                            <div>
-                                {this.state.apiRealTimeResponse &&
-                                    <div>
-                                        <table className="table table-bordered" style={{width:"50%"}}>
-                                            <thead>
-                                                <tr>
-                                                    <th width="50%">Name:</th>
-                                                    <th width="50%">Real Time Bid:</th>
-                                                </tr>
-                                            </thead>
-                                            <tbody>
-                                                <tr>
-                                                    <td>
-                                                        <p>{this.state.apiRealTimeResponse.data.query.results.quote.Name}</p>
-                                                    </td>
-                                                    <td>
-                                                        <p>{this.state.apiRealTimeResponse.data.query.results.quote.BidRealtime}</p>
-                                                    </td>
-                                                </tr>
-                                            </tbody>
-                                        </table>
-                                    </div>
-                                }
-                                 {this.state.apiHistoricalResponse &&
-                                    <div>
-                                        <hr />
-                                            <table className="table table-bordered">
-                                                <thead>
-                                                    <tr>
-                                                        <th>Day:</th>
-                                                        <th>Date:</th>
-                                                        <th>Open:</th>
-                                                        <th>Close:</th>
-                                                        <th>High:</th>
-                                                        <th>Low:</th>
-                                                        <th>Volume:</th>
-                                                        {this.state.formula_items &&
+                            <table className="table table-bordered" style={{width:"75%"}}>
+                                {this.tableHeader2()}
+                                <tbody>
+                                    {formula_items}
+                                </tbody>
+                                    {this.tableFooter2()}
+                            </table>
 
-                                                                this.state.formula_items.map( (item, index) => {
-                                                                return (<th key={index}>{item.percentage+"%"}</th>)
-                                                                })}
-
-                                                    </tr>
-                                                </thead>
-                                                <tbody>
-                                                    {this.state.apiHistoricalResponse.data.query.results.quote.reverse().map( (date, index) => {
-                                                        return(
-                                                            <tr key={index}>
-                                                                <td><p>{index+1}</p></td>
-                                                                <td><p>{date.Date}</p></td>
-                                                                <td><p>{date.Open}</p></td>
-                                                                <td><p>{date.Close}</p></td>
-                                                                <td><p>{date.High}</p></td>
-                                                                <td><p>{date.Low}</p></td>
-                                                                <td><p>{date.Volume}</p></td>
-                                                                {this.state.formula_items &&
-                                                                    this.state.formula_items.map( (item, index) => {
-                                                                    {cellStyle = this.valueChecker(buyPrice, date.Low, date.High, item.percentage).split("-")[0].toString()}
-                                                                    return (<td key={index} className={cellStyle}>
-                                                                        <p>{this.valueChecker(buyPrice, date.Low, date.High, item.percentage)}</p></td>)
-                                                                    })
-                                                                }
-                                                            </tr>
-                                                            )
-                                                        }
-
-                                                    )
-                                                    }
-
-                                                </tbody>
-                                            </table>
-
-                                    </div>
-                                }
+                            <div className="results">
+                            {this.updated() &&
+                                {result_items}
+                            }
                             </div>
                         </div>
                 </div>
@@ -495,6 +437,89 @@ class StockView extends React.Component {
             }
         }
 
+class ResultsView extends React.Component {
+    render(){
+        var { formula_items,apiHistoricalResponse, valueChecker, shares, buyPrice, name, bidRealtime } = this.props
+        if(apiHistoricalResponse){
+            var reverseArray = apiHistoricalResponse;
+            reverseArray.reverse();
+        }
+        return(
+            <div>
+                <table className="table table-bordered" style={{width:"50%"}}>
+                    <thead>
+                        <tr>
+                            <th width="50%">Name:</th>
+                            <th width="50%">Real Time Bid:</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        <tr>
+                            <td>
+                                <p>{name}</p>
+                            </td>
+                            <td>
+                                <p>{bidRealtime}</p>
+                            </td>
+                        </tr>
+                    </tbody>
+                </table>
+                <table className="table table-bordered">
+                    <thead>
+                        <tr>
+                            <th>Day:</th>
+                            <th>Date:</th>
+                            <th>Open:</th>
+                            <th>Close:</th>
+                            <th>High:</th>
+                            <th>Low:</th>
+                            <th>Volume:</th>
+                            {formula_items &&
+                                formula_items.map( (item, index) => {
+                                return (<th key={index}>{item.percentage+"%"}</th>)
+                                }
+                                )}
+                        </tr>
+                    </thead>
+                    <tbody>
+                        {reverseArray.map( (date, index) => {
+                            return(
+                                <tr key={index}>
+                                    <td><p>{index+1}</p></td>
+                                    <td><p>{date.Date}</p></td>
+                                    <td><p>{date.Open}</p></td>
+                                    <td><p>{date.Close}</p></td>
+                                    <td><p>{date.High}</p></td>
+                                    <td><p>{date.Low}</p></td>
+                                    <td><p>{date.Volume}</p></td>
+                                    {formula_items  &&
+                                        formula_items.map( (item, index) => {
+                                        {cellStyle = valueChecker(buyPrice, date.Low, date.High, item.percentage).split("-")[0].toString()}
+                                        {perShare = valueChecker(buyPrice, date.Low, date.High, item.percentage).split("-")[1]}
+                                        return (
+                                            <div>
+                                                <td key={index} className={cellStyle}>
+                                                <p>{valueChecker(buyPrice, date.Low, date.High, item.percentage)}</p></td>
+                                                    <td key={a+index} className={cellStyle}>
+                                                <p>{perShare * shares}</p></td>
+                                            </div>
+
+                                            )
+                                        })
+                                    }
+                                </tr>
+                                )
+                            }
+
+                        )
+                        }
+
+                    </tbody>
+                </table>
+            </div>
+        )
+    }
+}
 
 
 
