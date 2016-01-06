@@ -165,12 +165,26 @@ class StockView extends React.Component {
             this.setState({ formula_items: update(this.state.formula_items, {$push: [{ percentage: null, days: null }] })  });
         }
         deleteLineItem(index, event) {
-            this.setState({ line_items: update(this.state.line_items, {$splice: [[index, 1]] } ) });
+            if (this.state.line_items.length > 1) {
+                this.setState({ line_items: update(this.state.line_items, {$splice: [[index, 1]] } ) });
+            } else {
+                let newArray = [
+                    { title: null, buyPrice: null, shares: null, apiHistoricalResponse: null, apiRealTimeResponse: null }
+                ]
+                this.setState({ line_items: newArray});
+            }
+
         }
         deleteLineItem2(index, event) {
-            this.setState({ formula_items: update(this.state.formula_items, {$splice: [[index, 1]] } ) });
+            if (this.state.formula_items.length > 1) {
+                this.setState({ formula_items: update(this.state.formula_items, {$splice: [[index, 1]] } ) });
+            } else {
+                let newArray = [
+                    { percentage: null, days: null }
+                ];
+                this.setState({ formula_items: newArray });
+            }
         }
-
         dateStartChange(e){
             let date = new Date(e._d)
             let year = date.getFullYear().toString()
@@ -201,22 +215,6 @@ class StockView extends React.Component {
             return this.state.updated;
         }
         submitQuery(e){
-
-            // var accum = [];
-            // for (var x = 0; x < line_items.length; x++ ){
-            //      Promise.all([ api.realtimeQ(line_items[x].title),
-            //     api.historicalQ(line_items[x].title, startDate, endDate) ])
-            //     .then( (results) => {
-            //         accum.push( [ results[0], results[1] ] )
-            //     }).then( () => {
-            //             newArray[x].apiRealTimeResponse = accum[x][0]
-            //             newArray[x].apiHistoricalResponse = accum[x][1]
-            //     })
-            // }
-            // this.setState({
-            //     line_items: newArray,
-            //     updated: true
-            //  })
             e.preventDefault();
             this.setState({
                 updated: false
@@ -235,11 +233,13 @@ class StockView extends React.Component {
                          api.historicalQ(line_items[x].title, startDate, endDate)
                     ])
                     .then(results => {
+                        console.log("results:", results, "x:", x)
                         accum.push([results[0], results[1]]);
                     })
                     .then(() => {
                         newArray[x].apiRealTimeResponse = accum[x][0];
                         newArray[x].apiHistoricalResponse = accum[x][1];
+                        newArray[x].apiHistoricalResponse.data.query.results.quote.reverse();
                   })
                 );
               }
@@ -394,7 +394,7 @@ class StockView extends React.Component {
             }
 
             var result_items = [];
-            if ( this.updated() ) {
+            if ( this.state.line_items.length >= 1 && this.state.line_items[0].apiHistoricalResponse !== null ) {
             for(var index in this.state.line_items) {
                 result_items.push(
                 <ResultsView
@@ -466,13 +466,9 @@ class StockView extends React.Component {
 
 class ResultsView extends React.Component {
     render(){
-        var { formula_items,apiHistoricalResponse, valueChecker, shares, buyPrice, name, bidRealtime } = this.props
+        var { formula_items,apiHistoricalResponse, valueChecker, shares, buyPrice, name, bidRealtime } = this.props;
         var cellStyle = null;
         var perShare = null;
-        if(apiHistoricalResponse){
-            var reverseArray = apiHistoricalResponse;
-            reverseArray.reverse();
-        }
         return(
             <div>
                 <table className="table table-bordered" style={{width:"50%"}}>
@@ -496,8 +492,8 @@ class ResultsView extends React.Component {
                 <table className="table table-bordered">
                     <thead>
                         <tr>
-                            <th>Day:</th>
-                            <th>Date:</th>
+                            <th>Day: </th>
+                            <th>Date: </th>
                             <th>Open:</th>
                             <th>Close:</th>
                             <th>High:</th>
@@ -506,13 +502,13 @@ class ResultsView extends React.Component {
                             {formula_items &&
                                 formula_items.map( (item, index) => {
                                 return (<div><th key={index}>{item.percentage+"%"}</th>
-                                        <th key={"b"+index}>Total Made</th></div>)
+                                        <th key={"b"+index}>Total</th></div>)
                                 }
                                 )}
                         </tr>
                     </thead>
                     <tbody>
-                        {reverseArray.map( (date, index) => {
+                        {apiHistoricalResponse.map( (date, index) => {
                             return(
                                 <tr key={index}>
                                     <td><p>{index+1}</p></td>
@@ -531,7 +527,7 @@ class ResultsView extends React.Component {
                                                 <td key={index} className={cellStyle}>
                                                 <p>{valueChecker(buyPrice, date.Low, date.High, item.percentage)}</p></td>
                                                     <td key={"a"+index} className={cellStyle}>
-                                                <p>{ (parseFloat(perShare.substr(1,perShare.length)) * parseFloat(shares)).toFixed(2) }</p></td>
+                                                <p>{ "$"+(parseFloat(perShare.substr(1,perShare.length)) * parseFloat(shares)).toFixed(2) }</p></td>
                                             </div>
 
                                             )

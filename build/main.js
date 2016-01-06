@@ -1114,7 +1114,7 @@
 	 * will remain to ensure logic does not differ in production.
 	 */
 
-	var invariant = function (condition, format, a, b, c, d, e, f) {
+	function invariant(condition, format, a, b, c, d, e, f) {
 	  if (process.env.NODE_ENV !== 'production') {
 	    if (format === undefined) {
 	      throw new Error('invariant requires an error message argument');
@@ -1128,15 +1128,16 @@
 	    } else {
 	      var args = [a, b, c, d, e, f];
 	      var argIndex = 0;
-	      error = new Error('Invariant Violation: ' + format.replace(/%s/g, function () {
+	      error = new Error(format.replace(/%s/g, function () {
 	        return args[argIndex++];
 	      }));
+	      error.name = 'Invariant Violation';
 	    }
 
 	    error.framesToPop = 1; // we don't care about invariant's own frame
 	    throw error;
 	  }
-	};
+	}
 
 	module.exports = invariant;
 	/* WEBPACK VAR INJECTION */}.call(exports, __webpack_require__(6)))
@@ -10563,8 +10564,8 @@
 	     */
 	    // autoCapitalize and autoCorrect are supported in Mobile Safari for
 	    // keyboard hints.
-	    autoCapitalize: null,
-	    autoCorrect: null,
+	    autoCapitalize: MUST_USE_ATTRIBUTE,
+	    autoCorrect: MUST_USE_ATTRIBUTE,
 	    // autoSave allows WebKit/Blink to persist values of input fields on page reloads
 	    autoSave: null,
 	    // color is for Safari mask-icon link
@@ -10595,9 +10596,7 @@
 	    httpEquiv: 'http-equiv'
 	  },
 	  DOMPropertyNames: {
-	    autoCapitalize: 'autocapitalize',
 	    autoComplete: 'autocomplete',
-	    autoCorrect: 'autocorrect',
 	    autoFocus: 'autofocus',
 	    autoPlay: 'autoplay',
 	    autoSave: 'autosave',
@@ -13676,7 +13675,7 @@
 	    var value = LinkedValueUtils.getValue(props);
 
 	    if (value != null) {
-	      updateOptions(this, props, value);
+	      updateOptions(this, Boolean(props.multiple), value);
 	    }
 	  }
 	}
@@ -16715,15 +16714,11 @@
 	 * Same as document.activeElement but wraps in a try-catch block. In IE it is
 	 * not safe to call document.activeElement if there is nothing focused.
 	 *
-	 * The activeElement will be null only if the document or document body is not yet defined.
+	 * The activeElement will be null only if the document body is not yet defined.
 	 */
-	'use strict';
+	"use strict";
 
 	function getActiveElement() /*?DOMElement*/{
-	  if (typeof document === 'undefined') {
-	    return null;
-	  }
-
 	  try {
 	    return document.activeElement || document.body;
 	  } catch (e) {
@@ -18463,7 +18458,9 @@
 	  'setValueForProperty': 'update attribute',
 	  'setValueForAttribute': 'update attribute',
 	  'deleteValueForProperty': 'remove attribute',
-	  'dangerouslyReplaceNodeWithMarkupByID': 'replace'
+	  'setValueForStyles': 'update styles',
+	  'replaceNodeWithMarkup': 'replace',
+	  'updateTextContent': 'set textContent'
 	};
 
 	function getTotalTime(measurements) {
@@ -18655,18 +18652,23 @@
 	'use strict';
 
 	var performance = __webpack_require__(147);
-	var curPerformance = performance;
+
+	var performanceNow;
 
 	/**
 	 * Detect if we can use `window.performance.now()` and gracefully fallback to
 	 * `Date.now()` if it doesn't exist. We need to support Firefox < 15 for now
 	 * because of Facebook's testing infrastructure.
 	 */
-	if (!curPerformance || !curPerformance.now) {
-	  curPerformance = Date;
+	if (performance.now) {
+	  performanceNow = function () {
+	    return performance.now();
+	  };
+	} else {
+	  performanceNow = function () {
+	    return Date.now();
+	  };
 	}
-
-	var performanceNow = curPerformance.now.bind(curPerformance);
 
 	module.exports = performanceNow;
 
@@ -18715,7 +18717,7 @@
 
 	'use strict';
 
-	module.exports = '0.14.3';
+	module.exports = '0.14.5';
 
 /***/ },
 /* 149 */
@@ -20747,6 +20749,7 @@
 	            dateEndFormat: null,
 	            updated: false
 	        };
+	        console.log("apiRealTimeResponse", this.state.line_items[0].apiRealTimeResponse);
 	        this.titleChange = this.titleChange.bind(this);
 	        this.updated = this.updated.bind(this);
 	        this.buyPriceChange = this.buyPriceChange.bind(this);
@@ -20815,12 +20818,22 @@
 	    }, {
 	        key: 'deleteLineItem',
 	        value: function deleteLineItem(index, event) {
-	            this.setState({ line_items: (0, _reactAddonsUpdate2['default'])(this.state.line_items, { $splice: [[index, 1]] }) });
+	            if (this.state.line_items.length > 1) {
+	                this.setState({ line_items: (0, _reactAddonsUpdate2['default'])(this.state.line_items, { $splice: [[index, 1]] }) });
+	            } else {
+	                var newArray = [{ title: null, buyPrice: null, shares: null, apiHistoricalResponse: null, apiRealTimeResponse: null }];
+	                this.setState({ line_items: newArray });
+	            }
 	        }
 	    }, {
 	        key: 'deleteLineItem2',
 	        value: function deleteLineItem2(index, event) {
-	            this.setState({ formula_items: (0, _reactAddonsUpdate2['default'])(this.state.formula_items, { $splice: [[index, 1]] }) });
+	            if (this.state.formula_items.length > 1) {
+	                this.setState({ formula_items: (0, _reactAddonsUpdate2['default'])(this.state.formula_items, { $splice: [[index, 1]] }) });
+	            } else {
+	                var newArray = [{ percentage: null, days: null }];
+	                this.setState({ formula_items: newArray });
+	            }
 	        }
 	    }, {
 	        key: 'dateStartChange',
@@ -20860,22 +20873,37 @@
 	        value: function submitQuery(e) {
 	            var _this = this;
 
+	            e.preventDefault();
+	            this.setState({
+	                updated: false
+	            });
 	            var line_items = this.state.line_items;
 
+	            var newArray = this.state.line_items.slice();
 	            var startDate = this.state.dateStartFormat;
 	            var endDate = this.state.dateEndFormat;
-	            line_items.map(function (item, index) {
-	                var newArray = _this.state.line_items.slice();
-	                _utilsApiJs2['default'].realtimeQ(item.title).then(function (response) {
-	                    newArray[index].apiRealTimeResponse = response;
+	            var accum = [];
+	            var promises = [];
+
+	            var _loop = function (x) {
+	                promises.push(_bluebird2['default'].all([_utilsApiJs2['default'].realtimeQ(line_items[x].title), _utilsApiJs2['default'].historicalQ(line_items[x].title, startDate, endDate)]).then(function (results) {
+	                    console.log("results:", results, "x:", x);
+	                    accum.push([results[0], results[1]]);
 	                }).then(function () {
-	                    _utilsApiJs2['default'].historicalQ(item.title, startDate, endDate).then(function (response) {
-	                        newArray[index].apiHistoricalResponse = response;
-	                    }).then(function () {
-	                        _this.setState({
-	                            line_items: newArray
-	                        });
-	                    });
+	                    newArray[x].apiRealTimeResponse = accum[x][0];
+	                    newArray[x].apiHistoricalResponse = accum[x][1];
+	                    newArray[x].apiHistoricalResponse.data.query.results.quote.reverse();
+	                }));
+	            };
+
+	            for (var x = 0; x < line_items.length; x++) {
+	                _loop(x);
+	            }
+
+	            _bluebird2['default'].all(promises).then(function () {
+	                _this.setState({
+	                    line_items: newArray,
+	                    updated: true
 	                });
 	            });
 	        }
@@ -21037,21 +21065,21 @@
 	            var buyPriceAfterPercentage = buyPrice * multiplyPercentage;
 	            if (multiplyPercentage > 1) {
 	                if (lowPrice < buyPriceAfterPercentage && buyPriceAfterPercentage > highPrice) {
-	                    return ["Held", $ + buyPriceAfterPercentage.toFixed(2), $ + (buyPriceAfterPercentage - buyPrice).toFixed(2)].join("-");
+	                    return ["Held", "$" + buyPriceAfterPercentage.toFixed(2), "$" + (buyPriceAfterPercentage - buyPrice).toFixed(2)].join("-");
 	                }
 	                if (lowPrice < buyPriceAfterPercentage && buyPriceAfterPercentage <= highPrice) {
-	                    return ["Sold", $ + buyPriceAfterPercentage.toFixed(2), $ + (buyPriceAfterPercentage - buyPrice).toFixed(2)].join("-");
+	                    return ["Sold", "$" + buyPriceAfterPercentage.toFixed(2), "$" + (buyPriceAfterPercentage - buyPrice).toFixed(2)].join("-");
 	                }
 	                if (lowPrice >= buyPriceAfterPercentage) {
-	                    return ["Sold", $ + buyPriceAfterPercentage.toFixed(2), $ + (buyPriceAfterPercentage - buyPrice).toFixed(2)].join("-");
+	                    return ["Sold", "$" + buyPriceAfterPercentage.toFixed(2), "$" + (buyPriceAfterPercentage - buyPrice).toFixed(2)].join("-");
 	                }
 	            }
 	            if (multiplyPercentage < 1) {
 	                if (lowPrice < buyPriceAfterPercentage) {
-	                    return ["Sold", $ + buyPriceAfterPercentage.toFixed(2), $ + (buyPriceAfterPercentage - buyPrice).toFixed(2)].join("-");
+	                    return ["Sold", "$" + buyPriceAfterPercentage.toFixed(2), "$" + (buyPriceAfterPercentage - buyPrice).toFixed(2)].join("-");
 	                }
 	                if (lowPrice > buyPriceAfterPercentage) {
-	                    return ["Held", $ + buyPriceAfterPercentage.toFixed(2), $ + (buyPriceAfterPercentage - buyPrice).toFixed(2)].join("-");
+	                    return ["Held", "$" + buyPriceAfterPercentage.toFixed(2), "$" + (buyPriceAfterPercentage - buyPrice).toFixed(2)].join("-");
 	                }
 	            }
 	        }
@@ -21060,7 +21088,7 @@
 	        value: function render() {
 	            console.log("this.state.line.items", this.state.line_items);
 	            var line_items = [];
-	            var cellStyle = null;
+
 	            for (var index in this.state.line_items) {
 	                line_items.push(_react2['default'].createElement(Stock, {
 	                    key: index,
@@ -21084,20 +21112,21 @@
 	                    daysChange: this.daysChange,
 	                    deleteLineItem2: this.deleteLineItem2 }));
 	            }
-	            // let result_items = [];
-	            // for(var index in this.state.line_items) {
-	            //     result_items.push(
-	            //     <ResultsView
-	            //         key={index}
-	            //         formula_items={this.state.formula_items}
-	            //         apiHistoricalResponse={this.state.line_items[index].apiHistoricalResponse.data.query.results.quote || ""}
-	            //         valueChecker={this.valueChecker}
-	            //         shares={this.state.line_items[index].shares}
-	            //         buyPrice={this.state.line_items[index].buyPrice}
-	            //         name={this.state.line_items[index].apiRealTimeResponse.data.query.results.quote.Name || ""}
-	            //         bidRealtime={this.state.line_items[index].apiRealTimeResponse.data.query.results.quote.BidRealtime || ""} />
-	            //         )
-	            //     }
+
+	            var result_items = [];
+	            if (this.state.line_items.length >= 1 && this.state.line_items[0].apiHistoricalResponse !== null) {
+	                for (var index in this.state.line_items) {
+	                    result_items.push(_react2['default'].createElement(ResultsView, {
+	                        key: index,
+	                        formula_items: this.state.formula_items,
+	                        apiHistoricalResponse: this.state.line_items[index].apiHistoricalResponse.data.query.results.quote,
+	                        valueChecker: this.valueChecker,
+	                        shares: this.state.line_items[index].shares,
+	                        buyPrice: this.state.line_items[index].buyPrice,
+	                        name: this.state.line_items[index].apiRealTimeResponse.data.query.results.quote.Name,
+	                        bidRealtime: this.state.line_items[index].apiRealTimeResponse.data.query.results.quote.BidRealtime }));
+	                }
+	            }
 
 	            return _react2['default'].createElement(
 	                'div',
@@ -21175,7 +21204,11 @@
 	                        ),
 	                        this.tableFooter2()
 	                    ),
-	                    _react2['default'].createElement('div', { className: 'results' })
+	                    _react2['default'].createElement(
+	                        'div',
+	                        { className: 'results' },
+	                        result_items
+	                    )
 	                )
 	            );
 	        }
@@ -21205,10 +21238,8 @@
 	            var name = _props3.name;
 	            var bidRealtime = _props3.bidRealtime;
 
-	            if (apiHistoricalResponse) {
-	                var reverseArray = apiHistoricalResponse;
-	                reverseArray.reverse();
-	            }
+	            var cellStyle = null;
+	            var perShare = null;
 	            return _react2['default'].createElement(
 	                'div',
 	                null,
@@ -21272,12 +21303,12 @@
 	                            _react2['default'].createElement(
 	                                'th',
 	                                null,
-	                                'Day:'
+	                                'Day: '
 	                            ),
 	                            _react2['default'].createElement(
 	                                'th',
 	                                null,
-	                                'Date:'
+	                                'Date: '
 	                            ),
 	                            _react2['default'].createElement(
 	                                'th',
@@ -21306,9 +21337,18 @@
 	                            ),
 	                            formula_items && formula_items.map(function (item, index) {
 	                                return _react2['default'].createElement(
-	                                    'th',
-	                                    { key: index },
-	                                    item.percentage + "%"
+	                                    'div',
+	                                    null,
+	                                    _react2['default'].createElement(
+	                                        'th',
+	                                        { key: index },
+	                                        item.percentage + "%"
+	                                    ),
+	                                    _react2['default'].createElement(
+	                                        'th',
+	                                        { key: "b" + index },
+	                                        'Total'
+	                                    )
 	                                );
 	                            })
 	                        )
@@ -21316,7 +21356,7 @@
 	                    _react2['default'].createElement(
 	                        'tbody',
 	                        null,
-	                        reverseArray.map(function (date, index) {
+	                        apiHistoricalResponse.map(function (date, index) {
 	                            return _react2['default'].createElement(
 	                                'tr',
 	                                { key: index },
@@ -21404,11 +21444,11 @@
 	                                        ),
 	                                        _react2['default'].createElement(
 	                                            'td',
-	                                            { key: a + index, className: cellStyle },
+	                                            { key: "a" + index, className: cellStyle },
 	                                            _react2['default'].createElement(
 	                                                'p',
 	                                                null,
-	                                                perShare * shares
+	                                                "$" + (parseFloat(perShare.substr(1, perShare.length)) * parseFloat(shares)).toFixed(2)
 	                                            )
 	                                        )
 	                                    );
