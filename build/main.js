@@ -20747,9 +20747,11 @@
 	            dateStartFormat: null,
 	            dateEnd: null,
 	            dateEndFormat: null,
-	            updated: false
+	            updated: false,
+	            companies: null
 	        };
 	        console.log("apiRealTimeResponse", this.state.line_items[0].apiRealTimeResponse);
+	        console.log("line_items", this.state.line_items);
 	        this.titleChange = this.titleChange.bind(this);
 	        this.updated = this.updated.bind(this);
 	        this.buyPriceChange = this.buyPriceChange.bind(this);
@@ -20771,6 +20773,16 @@
 	    }
 
 	    _createClass(StockView, [{
+	        key: 'componentDidMount',
+	        value: function componentDidMount() {
+	            // Promise.all([api.companies()])
+	            // .then( (results) => {
+	            //     console.log("results for companies", results)
+	            //     this.setState({companies: results})
+	            // })
+	            // console.log("state companies", this.state.companies)
+	        }
+	    }, {
 	        key: 'titleChange',
 	        value: function titleChange(index, event) {
 	            var newArray = this.state.line_items.slice();
@@ -20818,21 +20830,29 @@
 	    }, {
 	        key: 'deleteLineItem',
 	        value: function deleteLineItem(index, event) {
+	            console.log("stocks:", this.state.line_items);
 	            if (this.state.line_items.length > 1) {
 	                this.setState({ line_items: (0, _reactAddonsUpdate2['default'])(this.state.line_items, { $splice: [[index, 1]] }) });
 	            } else {
 	                var newArray = [{ title: null, buyPrice: null, shares: null, apiHistoricalResponse: null, apiRealTimeResponse: null }];
 	                this.setState({ line_items: newArray });
+	                console.log("stocks2:", this.state.line_items);
 	            }
 	        }
 	    }, {
 	        key: 'deleteLineItem2',
 	        value: function deleteLineItem2(index, event) {
+	            console.log("formula_items", this.state.formula_items);
 	            if (this.state.formula_items.length > 1) {
-	                this.setState({ formula_items: (0, _reactAddonsUpdate2['default'])(this.state.formula_items, { $splice: [[index, 1]] }) });
+	                var newFormula = this.state.formula_items.slice().splice(index, 1);
+	                console.log("newFormula", newFormul);
+	                this.setState({ formula_items: newFormula });
+	                // this.setState({ formula_items: update(this.state.formula_items, {$splice: [[index, 1]] } ) });
+	                console.log("formula_items2", this.state.formula_items);
 	            } else {
 	                var newArray = [{ percentage: null, days: null }];
 	                this.setState({ formula_items: newArray });
+	                console.log("formula_items2", this.state.formula_items);
 	            }
 	        }
 	    }, {
@@ -21065,21 +21085,21 @@
 	            var buyPriceAfterPercentage = buyPrice * multiplyPercentage;
 	            if (multiplyPercentage > 1) {
 	                if (lowPrice < buyPriceAfterPercentage && buyPriceAfterPercentage > highPrice) {
-	                    return ["Held", "$" + buyPriceAfterPercentage.toFixed(2), "$" + (buyPriceAfterPercentage - buyPrice).toFixed(2)].join("-");
+	                    return ["Held", "Share price:$" + buyPriceAfterPercentage.toFixed(2), "Difference:$" + (buyPriceAfterPercentage - buyPrice).toFixed(2)].join("-");
 	                }
 	                if (lowPrice < buyPriceAfterPercentage && buyPriceAfterPercentage <= highPrice) {
-	                    return ["Sold", "$" + buyPriceAfterPercentage.toFixed(2), "$" + (buyPriceAfterPercentage - buyPrice).toFixed(2)].join("-");
+	                    return ["Sold", "Share price:$" + buyPriceAfterPercentage.toFixed(2), "Difference:$" + (buyPriceAfterPercentage - buyPrice).toFixed(2)].join("-");
 	                }
 	                if (lowPrice >= buyPriceAfterPercentage) {
-	                    return ["Sold", "$" + buyPriceAfterPercentage.toFixed(2), "$" + (buyPriceAfterPercentage - buyPrice).toFixed(2)].join("-");
+	                    return ["Sold", "Share price:$" + buyPriceAfterPercentage.toFixed(2), "Difference:$" + (buyPriceAfterPercentage - buyPrice).toFixed(2)].join("-");
 	                }
 	            }
 	            if (multiplyPercentage < 1) {
 	                if (lowPrice < buyPriceAfterPercentage) {
-	                    return ["Sold", "$" + buyPriceAfterPercentage.toFixed(2), "$" + (buyPriceAfterPercentage - buyPrice).toFixed(2)].join("-");
+	                    return ["Sold", "Share price:$" + buyPriceAfterPercentage.toFixed(2), "Difference:$" + (buyPriceAfterPercentage - buyPrice).toFixed(2)].join("-");
 	                }
 	                if (lowPrice > buyPriceAfterPercentage) {
-	                    return ["Held", "$" + buyPriceAfterPercentage.toFixed(2), "$" + (buyPriceAfterPercentage - buyPrice).toFixed(2)].join("-");
+	                    return ["Held", "Share price:$" + buyPriceAfterPercentage.toFixed(2), "Difference:$" + (buyPriceAfterPercentage - buyPrice).toFixed(2)].join("-");
 	                }
 	            }
 	        }
@@ -21117,6 +21137,7 @@
 	            if (this.state.line_items.length >= 1 && this.state.line_items[0].apiHistoricalResponse !== null) {
 	                for (var index in this.state.line_items) {
 	                    result_items.push(_react2['default'].createElement(ResultsView, {
+	                        line_items: this.state.line_items,
 	                        key: index,
 	                        formula_items: this.state.formula_items,
 	                        apiHistoricalResponse: this.state.line_items[index].apiHistoricalResponse.data.query.results.quote,
@@ -21124,7 +21145,10 @@
 	                        shares: this.state.line_items[index].shares,
 	                        buyPrice: this.state.line_items[index].buyPrice,
 	                        name: this.state.line_items[index].apiRealTimeResponse.data.query.results.quote.Name,
-	                        bidRealtime: this.state.line_items[index].apiRealTimeResponse.data.query.results.quote.BidRealtime }));
+	                        bidRealtime: this.state.line_items[index].apiRealTimeResponse.data.query.results.quote.BidRealtime,
+	                        EarningsShare: this.state.line_items[index].apiRealTimeResponse.data.query.results.quote.EarningsShare,
+	                        PercentChangeFromFiftydayMovingAverage: this.state.line_items[index].apiRealTimeResponse.data.query.results.quote.PercentChangeFromFiftydayMovingAverage,
+	                        FiftydayMovingAverage: this.state.line_items[index].apiRealTimeResponse.data.query.results.quote.FiftydayMovingAverage }));
 	                }
 	            }
 
@@ -21207,6 +21231,76 @@
 	                    _react2['default'].createElement(
 	                        'div',
 	                        { className: 'results' },
+	                        this.state.line_items[0].title && _react2['default'].createElement(
+	                            'table',
+	                            { className: 'table table-bordered', style: { width: "50%" } },
+	                            _react2['default'].createElement(
+	                                'thead',
+	                                null,
+	                                _react2['default'].createElement(
+	                                    'tr',
+	                                    null,
+	                                    _react2['default'].createElement('th', { width: '20%' }),
+	                                    _react2['default'].createElement(
+	                                        'th',
+	                                        { width: '20%' },
+	                                        'Stock'
+	                                    ),
+	                                    formula_items.map(function (item, index) {
+	                                        console.log("!!!ITEM", item);
+	                                        return _react2['default'].createElement(
+	                                            'th',
+	                                            { key: index, width: '10' },
+	                                            _react2['default'].createElement(
+	                                                'p',
+	                                                null,
+	                                                item.percentage
+	                                            )
+	                                        );
+	                                    }),
+	                                    _react2['default'].createElement(
+	                                        'th',
+	                                        { width: '20%' },
+	                                        ':'
+	                                    )
+	                                )
+	                            ),
+	                            _react2['default'].createElement(
+	                                'tbody',
+	                                null,
+	                                this.state.line_items.map(function (stock, index) {
+	                                    return _react2['default'].createElement(
+	                                        'tr',
+	                                        { key: index },
+	                                        _react2['default'].createElement(
+	                                            'td',
+	                                            null,
+	                                            _react2['default'].createElement(
+	                                                'p',
+	                                                null,
+	                                                index + 1
+	                                            )
+	                                        ),
+	                                        _react2['default'].createElement(
+	                                            'td',
+	                                            null,
+	                                            _react2['default'].createElement(
+	                                                'p',
+	                                                null,
+	                                                stock.title
+	                                            )
+	                                        ),
+	                                        formula_items.map(function (item, index) {
+	                                            return _react2['default'].createElement(
+	                                                'td',
+	                                                { key: index, width: '10' },
+	                                                item.percentage
+	                                            );
+	                                        })
+	                                    );
+	                                })
+	                            )
+	                        ),
 	                        result_items
 	                    )
 	                )
@@ -21237,6 +21331,10 @@
 	            var buyPrice = _props3.buyPrice;
 	            var name = _props3.name;
 	            var bidRealtime = _props3.bidRealtime;
+	            var EarningsShare = _props3.EarningsShare;
+	            var FiftydayMovingAverage = _props3.FiftydayMovingAverage;
+	            var line_items = _props3.line_items;
+	            var PercentChangeFromFiftydayMovingAverage = _props3.PercentChangeFromFiftydayMovingAverage;
 
 	            var cellStyle = null;
 	            var perShare = null;
@@ -21254,13 +21352,28 @@
 	                            null,
 	                            _react2['default'].createElement(
 	                                'th',
-	                                { width: '50%' },
+	                                { width: '20%' },
 	                                'Name:'
 	                            ),
 	                            _react2['default'].createElement(
 	                                'th',
-	                                { width: '50%' },
+	                                { width: '20%' },
 	                                'Real Time Bid:'
+	                            ),
+	                            _react2['default'].createElement(
+	                                'th',
+	                                { width: '20%' },
+	                                'Earnings Share:'
+	                            ),
+	                            _react2['default'].createElement(
+	                                'th',
+	                                { width: '20%' },
+	                                'Fifty day Moving Average:'
+	                            ),
+	                            _react2['default'].createElement(
+	                                'th',
+	                                { width: '20%' },
+	                                'Percent Change From Fifty day Moving Average:'
 	                            )
 	                        )
 	                    ),
@@ -21286,6 +21399,33 @@
 	                                    'p',
 	                                    null,
 	                                    bidRealtime
+	                                )
+	                            ),
+	                            _react2['default'].createElement(
+	                                'td',
+	                                null,
+	                                _react2['default'].createElement(
+	                                    'p',
+	                                    null,
+	                                    EarningsShare
+	                                )
+	                            ),
+	                            _react2['default'].createElement(
+	                                'td',
+	                                null,
+	                                _react2['default'].createElement(
+	                                    'p',
+	                                    null,
+	                                    FiftydayMovingAverage
+	                                )
+	                            ),
+	                            _react2['default'].createElement(
+	                                'td',
+	                                null,
+	                                _react2['default'].createElement(
+	                                    'p',
+	                                    null,
+	                                    PercentChangeFromFiftydayMovingAverage
 	                                )
 	                            )
 	                        )
@@ -21337,18 +21477,9 @@
 	                            ),
 	                            formula_items && formula_items.map(function (item, index) {
 	                                return _react2['default'].createElement(
-	                                    'div',
-	                                    null,
-	                                    _react2['default'].createElement(
-	                                        'th',
-	                                        { key: index },
-	                                        item.percentage + "%"
-	                                    ),
-	                                    _react2['default'].createElement(
-	                                        'th',
-	                                        { key: "b" + index },
-	                                        'Total'
-	                                    )
+	                                    'th',
+	                                    { key: index },
+	                                    item.percentage + "%"
 	                                );
 	                            })
 	                        )
@@ -21429,27 +21560,21 @@
 	                                    }
 	                                    {
 	                                        perShare = valueChecker(buyPrice, date.Low, date.High, item.percentage).split("-")[1];
+	                                        var dollarIndex = perShare.indexOf("$");
+	                                        perShare = perShare.slice(dollarIndex + 1);
 	                                    }
 	                                    return _react2['default'].createElement(
-	                                        'div',
-	                                        null,
+	                                        'td',
+	                                        { key: index, className: cellStyle },
 	                                        _react2['default'].createElement(
-	                                            'td',
-	                                            { key: index, className: cellStyle },
-	                                            _react2['default'].createElement(
-	                                                'p',
-	                                                null,
-	                                                valueChecker(buyPrice, date.Low, date.High, item.percentage)
-	                                            )
+	                                            'p',
+	                                            null,
+	                                            valueChecker(buyPrice, date.Low, date.High, item.percentage)
 	                                        ),
 	                                        _react2['default'].createElement(
-	                                            'td',
-	                                            { key: "a" + index, className: cellStyle },
-	                                            _react2['default'].createElement(
-	                                                'p',
-	                                                null,
-	                                                "$" + (parseFloat(perShare.substr(1, perShare.length)) * parseFloat(shares)).toFixed(2)
-	                                            )
+	                                            'p',
+	                                            null,
+	                                            "Total:$" + (parseFloat(perShare) * parseFloat(shares)).toFixed(2)
 	                                        )
 	                                    );
 	                                })
@@ -46411,6 +46536,10 @@
 	    historicalQ: function historicalQ(symbol, startDate, endDate) {
 	        console.log("Historical symbol being sent", symbol);
 	        return _axios2["default"].get(yqlURL + "select%20*%20from%20yahoo.finance.historicaldata%20where%20symbol%20%3D%20%22" + symbol + "%22%20and%20startDate%20%3D%20%22" + startDate + "%22%20and%20endDate%20%3D%20%22" + endDate + "%22" + dataFormat);
+	    },
+	    companies: function companies() {
+	        console.log("getting companies");
+	        return _axios2["default"].get("http://query.yahooapis.com/v1/public/yql?q=select%20*%20from%20yahoo.finance.industry&format=json&env=store%3A%2F%2Fdatatables.org%2Falltableswithkeys");
 	    }
 	};
 

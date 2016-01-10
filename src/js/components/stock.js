@@ -104,15 +104,17 @@ class StockView extends React.Component {
                     { percentage: 6, days: 2, },
                     { percentage: 4, days: 4, },
                     { percentage: 2, days: 6, },
-                    { percentage: -10, days: 10, }
+                    { percentage: -10, days: 10 }
                 ],
                 dateStart: null,
                 dateStartFormat: null,
                 dateEnd: null,
                 dateEndFormat: null,
-                updated: false
+                updated: false,
+                companies: null
             }
             console.log("apiRealTimeResponse", this.state.line_items[0].apiRealTimeResponse)
+            console.log("line_items", this.state.line_items)
             this.titleChange = this.titleChange.bind(this);
             this.updated = this.updated.bind(this);
             this.buyPriceChange = this.buyPriceChange.bind(this);
@@ -132,6 +134,14 @@ class StockView extends React.Component {
             this.submitQuery = this.submitQuery.bind(this);
             this.valueChecker = this.valueChecker.bind(this);
 
+        }
+        componentDidMount(){
+            // Promise.all([api.companies()])
+            // .then( (results) => {
+            //     console.log("results for companies", results)
+            //     this.setState({companies: results})
+            // })
+            // console.log("state companies", this.state.companies)
         }
         titleChange(index, event) {
             let newArray = this.state.line_items.slice();
@@ -165,6 +175,7 @@ class StockView extends React.Component {
             this.setState({ formula_items: update(this.state.formula_items, {$push: [{ percentage: null, days: null }] })  });
         }
         deleteLineItem(index, event) {
+            console.log("stocks:", this.state.line_items)
             if (this.state.line_items.length > 1) {
                 this.setState({ line_items: update(this.state.line_items, {$splice: [[index, 1]] } ) });
             } else {
@@ -172,18 +183,27 @@ class StockView extends React.Component {
                     { title: null, buyPrice: null, shares: null, apiHistoricalResponse: null, apiRealTimeResponse: null }
                 ]
                 this.setState({ line_items: newArray});
+                console.log("stocks2:", this.state.line_items)
             }
+
 
         }
         deleteLineItem2(index, event) {
+            console.log("formula_items", this.state.formula_items)
             if (this.state.formula_items.length > 1) {
-                this.setState({ formula_items: update(this.state.formula_items, {$splice: [[index, 1]] } ) });
+                var newFormula = this.state.formula_items.slice().splice(index, 1)
+                console.log("newFormula", newFormul)
+                this.setState({ formula_items: newFormula })
+                // this.setState({ formula_items: update(this.state.formula_items, {$splice: [[index, 1]] } ) });
+                console.log("formula_items2", this.state.formula_items)
             } else {
                 let newArray = [
                     { percentage: null, days: null }
                 ];
                 this.setState({ formula_items: newArray });
+                console.log("formula_items2", this.state.formula_items)
             }
+
         }
         dateStartChange(e){
             let date = new Date(e._d)
@@ -342,22 +362,22 @@ class StockView extends React.Component {
             let buyPriceAfterPercentage = buyPrice * multiplyPercentage;
             if (multiplyPercentage > 1) {
                 if (lowPrice < buyPriceAfterPercentage && buyPriceAfterPercentage > highPrice ){
-                    return ["Held", "$"+buyPriceAfterPercentage.toFixed(2), "$"+(buyPriceAfterPercentage-buyPrice).toFixed(2)].join("-")
+                    return ["Held", "Share price:$"+buyPriceAfterPercentage.toFixed(2), "Difference:$"+(buyPriceAfterPercentage-buyPrice).toFixed(2)].join("-")
                 }
                 if (lowPrice < buyPriceAfterPercentage && buyPriceAfterPercentage <= highPrice ){
-                    return ["Sold", "$"+buyPriceAfterPercentage.toFixed(2), "$"+(buyPriceAfterPercentage-buyPrice).toFixed(2)].join("-")
+                    return ["Sold", "Share price:$"+buyPriceAfterPercentage.toFixed(2), "Difference:$"+(buyPriceAfterPercentage-buyPrice).toFixed(2)].join("-")
                 }
                 if (lowPrice >= buyPriceAfterPercentage){
-                    return ["Sold", "$"+buyPriceAfterPercentage.toFixed(2), "$"+(buyPriceAfterPercentage-buyPrice).toFixed(2)].join("-")
+                    return ["Sold", "Share price:$"+buyPriceAfterPercentage.toFixed(2), "Difference:$"+(buyPriceAfterPercentage-buyPrice).toFixed(2)].join("-")
                 }
 
             }
             if (multiplyPercentage < 1) {
                 if (lowPrice < buyPriceAfterPercentage){
-                    return ["Sold", "$"+buyPriceAfterPercentage.toFixed(2), "$"+(buyPriceAfterPercentage-buyPrice).toFixed(2)].join("-")
+                    return ["Sold", "Share price:$"+buyPriceAfterPercentage.toFixed(2), "Difference:$"+(buyPriceAfterPercentage-buyPrice).toFixed(2)].join("-")
                 }
                 if (lowPrice > buyPriceAfterPercentage){
-                    return ["Held", "$"+buyPriceAfterPercentage.toFixed(2), "$"+(buyPriceAfterPercentage-buyPrice).toFixed(2)].join("-")
+                    return ["Held", "Share price:$"+buyPriceAfterPercentage.toFixed(2), "Difference:$"+(buyPriceAfterPercentage-buyPrice).toFixed(2)].join("-")
                 }
             }
         }
@@ -398,6 +418,7 @@ class StockView extends React.Component {
             for(var index in this.state.line_items) {
                 result_items.push(
                 <ResultsView
+                    line_items={this.state.line_items}
                     key={index}
                     formula_items={this.state.formula_items}
                     apiHistoricalResponse={this.state.line_items[index].apiHistoricalResponse.data.query.results.quote}
@@ -405,7 +426,10 @@ class StockView extends React.Component {
                     shares={this.state.line_items[index].shares}
                     buyPrice={this.state.line_items[index].buyPrice}
                     name={this.state.line_items[index].apiRealTimeResponse.data.query.results.quote.Name}
-                    bidRealtime={this.state.line_items[index].apiRealTimeResponse.data.query.results.quote.BidRealtime} />
+                    bidRealtime={this.state.line_items[index].apiRealTimeResponse.data.query.results.quote.BidRealtime}
+                    EarningsShare={this.state.line_items[index].apiRealTimeResponse.data.query.results.quote.EarningsShare}
+                    PercentChangeFromFiftydayMovingAverage={this.state.line_items[index].apiRealTimeResponse.data.query.results.quote.PercentChangeFromFiftydayMovingAverage}
+                    FiftydayMovingAverage={this.state.line_items[index].apiRealTimeResponse.data.query.results.quote.FiftydayMovingAverage} />
                     )
                 }
             }
@@ -456,6 +480,45 @@ class StockView extends React.Component {
                             </table>
 
                             <div className="results">
+                                {this.state.line_items[0].apiHistoricalResponse &&
+
+                                    <table className="table table-bordered" style={{width:"50%", marginBottom:"05%"}}>
+                                        <thead>
+                                            <tr>
+                                                <th width="20%"></th>
+                                                <th width="20%">Stock</th>
+                                                {this.state.formula_items.map( (item, index) => {
+                                                    console.log("!!!ITEM", item)
+                                                    return(
+                                                        <th key={index} width="10">
+                                                            {item.percentage+"%"}
+                                                        </th>
+                                                    )
+                                                })}
+                                                <th width="20%">:</th>
+                                            </tr>
+                                        </thead>
+                                        <tbody>
+                                            {this.state.line_items.map( (stock, index) => {
+                                                return(
+                                                    <tr key={index}>
+                                                            <td><p>{index+1}</p></td>
+                                                            <td><p>{stock.title}</p></td>
+                                                            {formula_items.map( (item, index) => {
+                                                                return(
+                                                                    <td key={index} width="10">
+                                                                        {item.percentage}
+                                                                    </td>
+                                                                )
+                                                            })}
+                                                            <td><p></p></td>
+                                                    </tr>
+                                                )})}
+                                        </tbody>
+                                    </table>
+                                }
+                                <br />
+                                <br />
                                 {result_items}
                             </div>
                         </div>
@@ -466,7 +529,7 @@ class StockView extends React.Component {
 
 class ResultsView extends React.Component {
     render(){
-        var { formula_items,apiHistoricalResponse, valueChecker, shares, buyPrice, name, bidRealtime } = this.props;
+        var { formula_items,apiHistoricalResponse, valueChecker, shares, buyPrice, name, bidRealtime, EarningsShare, FiftydayMovingAverage, line_items,PercentChangeFromFiftydayMovingAverage } = this.props;
         var cellStyle = null;
         var perShare = null;
         return(
@@ -474,8 +537,11 @@ class ResultsView extends React.Component {
                 <table className="table table-bordered" style={{width:"50%"}}>
                     <thead>
                         <tr>
-                            <th width="50%">Name:</th>
-                            <th width="50%">Real Time Bid:</th>
+                            <th width="20%">Name:</th>
+                            <th width="20%">Real Time Bid:</th>
+                            <th width="20%">Earnings Share:</th>
+                            <th width="20%">Fifty day Moving Average:</th>
+                            <th width="20%">Percent Change From Fifty day Moving Average:</th>
                         </tr>
                     </thead>
                     <tbody>
@@ -485,6 +551,15 @@ class ResultsView extends React.Component {
                             </td>
                             <td>
                                 <p>{bidRealtime}</p>
+                            </td>
+                            <td>
+                                <p>{EarningsShare}</p>
+                            </td>
+                            <td>
+                                <p>{FiftydayMovingAverage}</p>
+                            </td>
+                            <td>
+                                <p>{PercentChangeFromFiftydayMovingAverage}</p>
                             </td>
                         </tr>
                     </tbody>
@@ -501,8 +576,8 @@ class ResultsView extends React.Component {
                             <th>Volume:</th>
                             {formula_items &&
                                 formula_items.map( (item, index) => {
-                                return (<div><th key={index}>{item.percentage+"%"}</th>
-                                        <th key={"b"+index}>Total</th></div>)
+                                return (<th key={index}>{item.percentage+"%"}</th>)
+
                                 }
                                 )}
                         </tr>
@@ -521,16 +596,16 @@ class ResultsView extends React.Component {
                                     {formula_items  &&
                                         formula_items.map( (item, index) => {
                                         {cellStyle = valueChecker(buyPrice, date.Low, date.High, item.percentage).split("-")[0].toString()}
-                                        {perShare = valueChecker(buyPrice, date.Low, date.High, item.percentage).split("-")[1]}
-                                        return (
-                                            <div>
-                                                <td key={index} className={cellStyle}>
-                                                <p>{valueChecker(buyPrice, date.Low, date.High, item.percentage)}</p></td>
-                                                    <td key={"a"+index} className={cellStyle}>
-                                                <p>{ "$"+(parseFloat(perShare.substr(1,perShare.length)) * parseFloat(shares)).toFixed(2) }</p></td>
-                                            </div>
-
-                                            )
+                                        {perShare = valueChecker(buyPrice, date.Low, date.High, item.percentage).split("-")[1]
+                                         var dollarIndex = perShare.indexOf("$")
+                                         perShare = perShare.slice(dollarIndex+1)
+                                        }
+                                         return (
+                                                           <td key={index} className={cellStyle}>
+                                                            <p>{valueChecker(buyPrice, date.Low, date.High, item.percentage)}</p>
+                                                            <p>{ "Total:$"+(parseFloat(perShare) * parseFloat(shares)).toFixed(2) }</p>
+                                                           </td>
+                                                           )
                                         })
                                     }
                                 </tr>
